@@ -1,10 +1,985 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>mellstroy.game — Креативный конкурс</title>
+    <meta name="description" content="mellstroy.game — конкурс от MellStroy. Креатив, карты, фишки и шанс выиграть квартиру."/>
+    <style>
+        :root{
+            --bg:#09121a;
+            --card:#0f1720;
+            --accent:#d92e2e; /* покер-красный */
+            --accent2:#ffd54d; /* золотой фишки */
+            --text:#f4f6f8;
+            --muted:#9aa7b0;
+            --glass: rgba(255,255,255,0.04);
+            --chip-size:48px;
+            font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+        }
+        *{box-sizing:border-box}
+        body{
+            margin:0;
+            min-height:100vh;
+            background:
+                    radial-gradient(1200px 600px at 10% 10%, rgba(217,46,46,0.08), transparent 6%),
+                    radial-gradient(800px 400px at 90% 90%, rgba(0,122,102,0.06), transparent 6%),
+                    var(--bg);
+            color:var(--text);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:32px;
+        }
+
+        .wrap{
+            width:100%;
+            max-width:1100px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));
+            border-radius:18px;
+            padding:28px;
+            box-shadow: 0 10px 40px rgba(2,6,23,0.7);
+            position:relative;
+            overflow:hidden;
+            border:1px solid rgba(255,255,255,0.03);
+        }
+
+        header{
+            display:flex;
+            gap:20px;
+            align-items:center;
+        }
+
+        /* logo placeholder */
+        .logo{
+            width:84px;
+            height:84px;
+            border-radius:12px;
+            background:linear-gradient(135deg,#11181f,#0b0f12);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            position:relative;
+            overflow:hidden;
+            flex-shrink:0;
+            border:2px solid rgba(255,255,255,0.03);
+        }
+        .logo img{max-width:100%; max-height:100%; display:block; object-fit:contain;}
+        .logo .stub{
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            gap:4px;
+            color:var(--muted);
+            font-size:12px;
+        }
+
+        /* Title with per-letter spans */
+        .title-block{
+            display:flex;
+            flex-direction:column;
+            gap:6px;
+            user-select:none;
+        }
+        .site-title{
+            font-weight:800;
+            font-size:46px;
+            letter-spacing:2px;
+            line-height:1;
+            display:flex;
+            gap:6px;
+        }
+        .site-title span{
+            display:inline-block;
+            transform:translate3d(0,0,0);
+            transition:transform 0.25s cubic-bezier(.2,.9,.3,1);
+            will-change:transform;
+            padding:0 2px;
+        }
+        .domain{
+            display:inline-block;
+            font-weight:700;
+            color:var(--accent);
+            text-decoration:none;
+            font-size:20px;
+            margin-top:2px;
+        }
+
+        p.lead{
+            margin:0;
+            color:var(--muted);
+            font-size:14px;
+        }
+
+        /* Right panel: CTA */
+        .side{
+            position:absolute;
+            right:18px;
+            top:18px;
+            display:flex;
+            gap:10px;
+            align-items:center;
+        }
+        .btn{
+            background:linear-gradient(180deg,var(--accent),#b32424);
+            color:white;
+            border:none;
+            padding:10px 14px;
+            border-radius:10px;
+            font-weight:700;
+            cursor:pointer;
+            box-shadow: 0 6px 18px rgba(217,46,46,0.18);
+        }
+        .btn.secondary{
+            background:transparent;
+            border:1px solid rgba(255,255,255,0.06);
+            color:var(--text);
+            padding:8px 12px;
+            font-weight:600;
+        }
+
+        /* big hero area */
+        .hero{
+            display:flex;
+            gap:28px;
+            margin-top:20px;
+            align-items:center;
+        }
+        .hero-left{
+            flex:1;
+            min-width:260px;
+        }
+        .hero-right{
+            width:360px;
+            max-width:40%;
+            min-width:220px;
+            position:relative;
+            padding:18px;
+            border-radius:12px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(0,0,0,0.03));
+            border:1px solid rgba(255,255,255,0.03);
+        }
+
+        /* card showing domain big */
+        .domain-card{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            background:var(--glass);
+            padding:14px;
+            border-radius:10px;
+            border:1px solid rgba(255,255,255,0.02);
+        }
+        .domain-card .domain-big{
+            font-size:20px;
+            font-weight:800;
+            color:var(--accent);
+            word-break:break-all;
+        }
+        .domain-card .small{
+            font-size:12px;
+            color:var(--muted);
+        }
+
+        /* poker table preview */
+        .table-preview{
+            margin-top:18px;
+            height:170px;
+            border-radius:10px;
+            background:
+                    radial-gradient(ellipse at 50% 10%, rgba(255,255,255,0.02), transparent 10%),
+                    linear-gradient(180deg,#0c2116,#07110a);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            position:relative;
+            overflow:hidden;
+        }
+        .cards{
+            display:flex;
+            gap:10px;
+            transform:translateY(-6px);
+        }
+        .card{
+            width:64px;
+            height:90px;
+            border-radius:8px;
+            background:linear-gradient(180deg,#fff,#f0f0f0);
+            box-shadow:0 8px 30px rgba(0,0,0,0.6);
+            transform:rotate(-12deg);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-weight:800;
+            color:#d92e2e;
+            font-size:20px;
+        }
+        .card:nth-child(2){transform:translateX(-20px) rotate(-6deg)}
+        .card:nth-child(3){transform:translateX(-38px) rotate(6deg)}
+        .chip-stack{
+            position:absolute;
+            right:24px;
+            bottom:18px;
+            display:flex;
+            flex-direction:column;
+            gap:6px;
+            align-items:flex-end;
+        }
+        .chip{
+            width:var(--chip-size);
+            height:var(--chip-size);
+            border-radius:50%;
+            background:conic-gradient(from 180deg, #fff 0 25%, var(--accent) 0 50%, #fff 0 75%, var(--accent) 0);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-weight:800;
+            box-shadow:0 6px 18px rgba(0,0,0,0.6);
+            transform:scale(0.95);
+        }
+
+        footer{
+            margin-top:18px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:12px;
+            color:var(--muted);
+            font-size:13px;
+        }
+
+        /* confetti area */
+        #confetti {
+            pointer-events:none;
+            position:absolute;
+            inset:0;
+            z-index:40;
+        }
+
+        /* floating chips (spawned dynamically) */
+        .floating-chip{
+            position:absolute;
+            width:44px;
+            height:44px;
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-weight:700;
+            color:#fff;
+            transform:translate(-50%,-50%) scale(1);
+            pointer-events:none;
+            will-change:transform,opacity;
+            z-index:20;
+        }
+
+        /* small responsiveness */
+        /* ---------- Адаптивность для планшетов и телефонов ---------- */
+        @media (max-width:1100px) {
+            .wrap {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width:820px){
+            .hero{
+                flex-direction:column;
+                gap:18px;
+            }
+            .hero-right{
+                width:100%;
+                max-width:100%;
+                min-width:unset;
+                padding:14px;
+            }
+            .site-title{
+                font-size:34px;
+                flex-wrap:wrap;
+            }
+            .title-block{
+                gap:2px;
+            }
+            .side{
+                position:static;
+                margin-left:auto;
+                margin-top:12px;
+                gap:6px;
+            }
+            .logo{
+                width:64px;
+                height:64px;
+            }
+            .logo .stub{
+                font-size:10px;
+            }
+            .domain-card{
+                flex-direction:column;
+                gap:4px;
+            }
+            .domain-card .domain-big{
+                font-size:18px;
+            }
+            .table-preview{
+                height:140px;
+            }
+            .cards .card{
+                width:50px;
+                height:72px;
+                font-size:16px;
+            }
+            .chip-stack .chip{
+                width:36px;
+                height:36px;
+                font-size:12px;
+            }
+            .floating-chip{
+                width:32px;
+                height:32px;
+                font-size:10px;
+            }
+            footer{
+                flex-direction:column;
+                gap:4px;
+                font-size:12px;
+            }
+            .hero-right ul{
+                padding-left:14px;
+                font-size:13px;
+            }
+            .btn{
+                padding:8px 12px;
+                font-size:14px;
+            }
+            .btn.secondary{
+                padding:6px 10px;
+                font-size:13px;
+            }
+        }
+
+        @media (max-width:480px){
+            body{
+                padding:16px;
+            }
+            .wrap{
+                padding:16px;
+                border-radius:14px;
+            }
+            .site-title{
+                font-size:28px;
+                gap:2px;
+            }
+            .domain-card .domain-big{
+                font-size:16px;
+            }
+            .table-preview{
+                height:120px;
+            }
+            .cards .card{
+                width:44px;
+                height:64px;
+                font-size:14px;
+            }
+            .chip-stack .chip{
+                width:28px;
+                height:28px;
+                font-size:10px;
+            }
+            .floating-chip{
+                width:24px;
+                height:24px;
+                font-size:8px;
+            }
+            .hero-right h3{
+                font-size:16px;
+            }
+            .hero-right ul{
+                font-size:12px;
+                padding-left:12px;
+            }
+            .btn{
+                padding:6px 10px;
+                font-size:12px;
+            }
+            .btn.secondary{
+                padding:4px 8px;
+                font-size:11px;
+            }
+        }
+
+    </style>
 </head>
 <body>
-$END$
+<div class="wrap" id="page">
+    <div id="confetti"></div>
+
+    <header>
+        <div class="logo" title="Логотип mellstroy.game — замените картинку сюда">
+            <!-- Замените src на вашу картинку логотипа -->
+            <img src="images/photo_2025-10-21_08-22-00.jpg" alt="mellstroy logo" />
+            <!-- Если хотите заглушку без картинки, закомментируйте <img> и раскомментируйте блок ниже -->
+            <!--
+            <div class="stub">
+              <div style="font-weight:800;">M</div>
+              <div style="font-size:11px;">LOGO</div>
+            </div>
+            -->
+        </div>
+
+        <div class="title-block">
+            <!-- Название разбито по буквам -->
+            <div class="site-title" id="siteTitle" aria-label="mellstroy game">
+                <!-- JS автоматически разделяет текст на span, но оставим базовый вариант на случай отключённого JS -->
+                <span>m</span><span>e</span><span>l</span><span>l</span><span>s</span><span>t</span><span>r</span><span>o</span><span>y</span><span>.</span><span>g</span><span>a</span><span>m</span><span>e</span>
+            </div>
+            <a class="domain" href="https://mellstroy.game" target="_blank" rel="noopener">mellstroy.game</a>
+            <p class="lead">Креативный проект для конкурса — карты, фишки и шанс выиграть квартиру. Подключайся и делай контент, который взлетит.</p>
+        </div>
+
+        <div class="side" aria-hidden="true">
+            <button class="btn" id="likeBtn">❤ Нравится <span id="likes">0</span></button>
+            <button class="btn secondary" id="shareBtn">Поделиться</button>
+        </div>
+    </header>
+
+    <div class="hero">
+        <div class="hero-left">
+            <div class="domain-card">
+                <div>
+                    <div class="domain-big">mellstroy.game</div>
+
+                </div>
+                <div class="small">Конкурс — креатив решает.</div>
+            </div>
+
+            <div class="table-preview" id="tablePreview" title="Покерная зона — наведите мышь или кликните для фишек">
+                <div class="cards" aria-hidden="true">
+                    <div class="card">A♠</div>
+                    <div class="card">K♥</div>
+                    <div class="card">Q♦</div>
+                </div>
+
+                <div class="chip-stack" aria-hidden="true">
+                    <div class="chip">500</div>
+                    <div class="chip">100</div>
+                    <div class="chip">25</div>
+                </div>
+            </div>
+
+            <footer>
+
+                <div class="small">Сделано с ♥ для mellstroy.game</div>
+
+            </footer>
+            <div style="margin-top:24px; text-align:center;">
+                <h3 style="margin-bottom:8px;">Мини-игра: Прыгай через препятствия!</h3>
+                <canvas id="gameCanvas" width="800" height="200" style="background:linear-gradient(to top,#0f1720,#09121a); border-radius:12px; width:100%; max-width:800px; height:auto; display:block; margin:0 auto;"></canvas>
+
+                <div style="margin-top:6px; color:var(--accent); font-weight:700;" id="gameScore">Очки: 0</div>
+            </div>
+        </div>
+
+        <div class="hero-right">
+            <h3 style="margin:0 0 8px 0;">Учавствуем в mellstroy.game</h3>
+            <ul style="margin:0; padding-left:18px; color:var(--muted)">
+                <li>Лвйкай.</li>
+                <li>Делай контент.</li>
+                <li>Развивайся и твори </li>
+                <li>mellstroy.game это движение.</li>
+            </ul>
+
+            <div style="margin-top:12px; display:flex; gap:8px;">
+                <button class="btn" id="copyBtn">Копировать ссылку</button>
+                <button class="btn secondary" id="demoChip">Показать фишки</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mini-game area -->
+
+
+<script>
+    (function(){
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('gameScore');
+
+        const width = canvas.width;
+        const height = canvas.height;
+
+        let gameOver = false;
+        let score = 0;
+
+        const player = {
+            x: 50,
+            y: height - 40,
+            width: 32,
+            height: 32,
+            vy: 0,
+            gravity: 0.8,
+
+            jumpForce: -14,
+            grounded: true,
+            color: '#ffd54d'
+        };
+
+        const obstacles = [];
+        const OBSTACLE_WIDTH = 20;
+        const OBSTACLE_HEIGHT = 40;
+        const OBSTACLE_GAP = 200; // минимальное расстояние между препятствиями
+
+        let frameCount = 0;
+
+        // управление
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                e.preventDefault(); // <-- предотвращаем скролл
+            }
+
+            if ((e.code === 'Space' || e.code === 'ArrowUp') && player.grounded) {
+                player.vy = player.jumpForce;
+                player.grounded = false;
+            }
+        });
+
+
+        function spawnObstacle(){
+            const lastX = obstacles.length ? obstacles[obstacles.length - 1].x : width;
+            const x = Math.max(lastX + OBSTACLE_GAP, width);
+            obstacles.push({x:x, y:height-40, width:OBSTACLE_WIDTH, height:OBSTACLE_HEIGHT});
+        }
+
+        function update(){
+            if(gameOver) return;
+
+            // движение игрока
+            player.vy += player.gravity;
+            player.y += player.vy;
+            if(player.y + player.height >= height){
+                player.y = height - player.height;
+                player.vy = 0;
+                player.grounded = true;
+            }
+
+            // движение препятствий
+            for(let obs of obstacles){
+                obs.x -= 4;
+            }
+
+            // удаление пройденных препятствий + увеличение счета
+            for(let i=obstacles.length-1;i>=0;i--){
+                if(obstacles[i].x + obstacles[i].width < 0){
+                    obstacles.splice(i,1);
+                    score += 1;
+                    scoreEl.textContent = `Очки: ${score}`;
+                }
+            }
+
+            // спавн препятствий
+            frameCount++;
+            if(frameCount % 90 === 0){ // каждые ~1.5 секунды
+                spawnObstacle();
+            }
+
+            // проверка столкновений
+            for(let obs of obstacles){
+                if(player.x < obs.x + obs.width &&
+                    player.x + player.width > obs.x &&
+                    player.y < obs.y + obs.height &&
+                    player.y + player.height > obs.y){
+                    gameOver = true;
+                    scoreEl.textContent = `Игра окончена! Очки: ${score}`;
+                }
+            }
+        }
+
+        function draw(){
+            // очистка
+            ctx.clearRect(0,0,width,height);
+
+            // игрок
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            // препятствия
+            ctx.fillStyle = '#d92e2e';
+            for(let obs of obstacles){
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+            }
+        }
+
+        function loop(){
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+    })();
+    // для сенсорных устройств
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // чтобы не скроллилось
+        if(player.grounded){
+            player.vy = player.jumpForce;
+            player.grounded = false;
+        }
+    }, {passive:false});
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let canvasWidth = canvas.offsetWidth;
+    let canvasHeight = canvasWidth * (200/800); // пропорции исходного канваса
+
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+
+    // при изменении размера окна
+    window.addEventListener('resize', () => {
+        canvasWidth = canvas.offsetWidth;
+        canvasHeight = canvasWidth * (200/800);
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+    });
+
+    // или кнопка "Прыжок" (добавь на страницу, если нужно)
+
+</script>
+
+
+<script>
+    /* ---------- Пер- буквы эффект: буквы тянутся к курсору ---------- */
+    (function(){
+        const titleEl = document.getElementById('siteTitle');
+
+        // если нет спанов, разбиваем текст
+        if(!titleEl.querySelector('span')){
+            const txt = titleEl.textContent.trim();
+            titleEl.innerHTML = '';
+            for(let ch of txt){
+                const sp = document.createElement('span');
+                sp.textContent = ch;
+                titleEl.appendChild(sp);
+            }
+        }
+
+        const spans = Array.from(titleEl.querySelectorAll('span'));
+        const MAX_SHIFT = 18;
+        const EFFECT_RADIUS = 220;
+
+        let mouse = {x:-9999, y:-9999};
+        let rect = titleEl.getBoundingClientRect();
+
+        window.addEventListener('resize', ()=>rect=titleEl.getBoundingClientRect());
+        window.addEventListener('scroll', ()=>rect=titleEl.getBoundingClientRect(), true);
+        document.addEventListener('mousemove', (e)=>{ mouse.x=e.clientX; mouse.y=e.clientY; });
+
+        const state = spans.map(()=>({tx:0, ty:0, currTx:0, currTy:0, scale:1, currScale:1}));
+
+        function animate(){
+            for(let i=0;i<spans.length;i++){
+                const sp = spans[i];
+                const st = state[i];
+                const r = sp.getBoundingClientRect();
+                const cx = r.left + r.width/2;
+                const cy = r.top + r.height/2;
+                const dx = mouse.x - cx;
+                const dy = mouse.y - cy;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                if(dist < EFFECT_RADIUS){
+                    const force = 1 - dist/EFFECT_RADIUS;
+                    st.tx = (dx/dist||0)*MAX_SHIFT*force;
+                    st.ty = (dy/dist||0)*MAX_SHIFT*0.35*force;
+                    st.scale = 1 + 0.02*force;
+                } else {
+                    st.tx = 0;
+                    st.ty = 0;
+                    st.scale = 1;
+                }
+
+                // плавная интерполяция
+                st.currTx += (st.tx - st.currTx)*0.2;
+                st.currTy += (st.ty - st.currTy)*0.2;
+                st.currScale += (st.scale - st.currScale)*0.2;
+
+                sp.style.transform = `translate3d(${st.currTx}px, ${st.currTy}px, 0) scale(${st.currScale})`;
+            }
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // возврат при уходе курсора
+        titleEl.addEventListener('mouseleave', ()=>{
+            mouse.x=-9999; mouse.y=-9999;
+        });
+
+    })();
+
+
+    // touch support: slight attraction to center of touch
+        document.addEventListener('touchmove', (ev)=>{
+            const t = ev.touches[0];
+            if (t){ mouse.x = t.clientX; mouse.y = t.clientY; }
+        }, {passive:true});
+
+
+    /* ---------- кнопки: копировать ссылку, поделиться, лайк + конфетти ---------- */
+    (function(){
+        const copyBtn = document.getElementById('copyBtn');
+        const shareBtn = document.getElementById('shareBtn');
+        const likeBtn = document.getElementById('likeBtn');
+        const likesCount = document.getElementById('likes');
+        const demoChip = document.getElementById('demoChip');
+        const page = document.getElementById('page');
+        let likes = 7984;
+
+        copyBtn.addEventListener('click', async ()=>{
+            try {
+                await navigator.clipboard.writeText('https://mellstroy.game');
+                showBubble(copyBtn, 'Скопировано!');
+                spawnFloatingChips(6);
+            } catch(e){
+                showBubble(copyBtn, 'Не удалось');
+            }
+        });
+
+        shareBtn.addEventListener('click', ()=>{
+            const url = encodeURIComponent('https://mellstroy.game');
+            const text = encodeURIComponent('Я в конкурсе MellStroy — моя ставка на квартиру: mellstroy.game');
+            // открываем твиттер (плюс пользователь сможет выбрать)
+            const shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+            window.open(shareUrl, '_blank', 'noopener');
+        });
+
+
+
+        demoChip.addEventListener('click', ()=> spawnFloatingChips(12));
+
+        // tiny helper: bubble text near element
+        function showBubble(el, text){
+            const b = document.createElement('div');
+            b.textContent = text;
+            b.style.position = 'absolute';
+            b.style.padding = '8px 10px';
+            b.style.background = 'rgba(0,0,0,0.6)';
+            b.style.color = '#fff';
+            b.style.borderRadius = '8px';
+            b.style.fontSize = '13px';
+            b.style.pointerEvents = 'none';
+            document.body.appendChild(b);
+            const r = el.getBoundingClientRect();
+            b.style.left = (r.left + r.width/2 - b.offsetWidth/2) + 'px';
+            b.style.top = (r.top - 42) + 'px';
+            b.style.opacity = '0';
+            requestAnimationFrame(()=> b.style.transition = 'opacity 220ms, transform 220ms', b.style.opacity='1');
+            setTimeout(()=> {
+                b.style.opacity='0';
+                b.style.transform='translateY(-6px)';
+                setTimeout(()=> b.remove(), 300);
+            }, 900);
+        }
+
+        /* --------- floating chips: декоративные элементы -------- */
+        function spawnFloatingChips(count=6){
+            const container = page;
+            for (let i=0;i<count;i++){
+                const chip = document.createElement('div');
+                chip.className = 'floating-chip';
+                const colors = [['#e53935','#ffd54d'], ['#00897b','#b2dfdb'], ['#3f51b5','#c5cae9']];
+                const c = colors[Math.floor(Math.random()*colors.length)];
+                chip.style.background = `radial-gradient(circle at 30% 30%, ${c[1]}, ${c[0]})`;
+                chip.style.left = (Math.random()*70 + 10) + '%';
+                chip.style.top = (Math.random()*60 + 20) + '%';
+                chip.textContent = Math.random() > 0.6 ? '50' : (Math.random()>0.5 ? '25' : '100');
+                container.appendChild(chip);
+                // animate upward + fade
+                const dx = (Math.random()-0.5) * 120;
+                const dy = - (120 + Math.random()*160);
+                chip.animate([
+                    { transform:`translate3d(0,0,0) scale(1)`, opacity:1 },
+                    { transform:`translate3d(${dx}px, ${dy}px, 0) scale(0.85)`, opacity:0 }
+                ], { duration: 900 + Math.random()*900, easing:'cubic-bezier(.2,.8,.2,1)' });
+                setTimeout(()=> chip.remove(), 1200 + Math.random()*1400);
+            }
+        }
+
+        /* --------- confetti (canvas) --------- */
+        function spawnConfetti(amount=40){
+            const c = document.createElement('canvas');
+            c.width = window.innerWidth;
+            c.height = window.innerHeight;
+            c.style.position = 'fixed';
+            c.style.left=0; c.style.top=0;
+            c.style.zIndex=9999;
+            c.style.pointerEvents='none';
+            document.body.appendChild(c);
+            const ctx = c.getContext('2d');
+            const pieces = [];
+            const colors = ['#ffd54d','#ff6f61','#4fc3f7','#a5d6a7','#f06292','#ce93d8'];
+            for (let i=0;i<amount;i++){
+                pieces.push({
+                    x: Math.random()*c.width,
+                    y: -20 - Math.random()*200,
+                    r: 6 + Math.random()*10,
+                    color: colors[Math.floor(Math.random()*colors.length)],
+                    vx: (Math.random()-0.5)*6,
+                    vy: 2 + Math.random()*5,
+                    rot: Math.random()*360,
+                    vr: (Math.random()-0.5)*10
+                });
+            }
+            let t0 = null;
+            function frame(t){
+                if(!t0) t0=t;
+                const dt = t - t0;
+                t0 = t;
+                ctx.clearRect(0,0,c.width,c.height);
+                for (let p of pieces){
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.06; // gravity
+                    p.rot += p.vr;
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rot * Math.PI/180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.r/2, -p.r/2, p.r, p.r*1.6);
+                    ctx.restore();
+                }
+                // remove if all below screen
+                if (pieces.every(p => p.y > c.height + 50)){
+                    c.remove(); return;
+                }
+                requestAnimationFrame(frame);
+            }
+            requestAnimationFrame(frame);
+            // safety remove after 4s
+            setTimeout(()=>{ if(c.parentNode) c.remove() }, 4200);
+        }
+    })();
+
+    const cards = Array.from(document.querySelectorAll('.card'));
+    let mouse = {x: -9999, y: -9999};
+    let rect = document.getElementById('tablePreview').getBoundingClientRect();
+    let cardState = cards.map(() => ({tx:0, ty:0, rot:0, currTx:0, currTy:0, currRot:0}));
+
+    function updateRect(){ rect = document.getElementById('tablePreview').getBoundingClientRect(); }
+    window.addEventListener('resize', updateRect);
+    window.addEventListener('scroll', updateRect, true);
+
+    document.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+
+    function animateCards(){
+        for(let i=0;i<cards.length;i++){
+            const card = cards[i];
+            const state = cardState[i];
+            const r = card.getBoundingClientRect();
+            const cx = r.left + r.width/2;
+            const cy = r.top + r.height/2;
+            const dx = mouse.x - cx;
+            const dy = mouse.y - cy;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            const MAX_SHIFT = 20;
+            const EFFECT_RADIUS = 250;
+
+            if(dist < EFFECT_RADIUS){
+                const force = 1 - dist/EFFECT_RADIUS;
+                state.tx = (dx/dist||0) * MAX_SHIFT * force;
+                state.ty = (dy/dist||0) * MAX_SHIFT * 0.6 * force;
+                state.rot = (dx/dist||0) * 10 * force;
+            } else {
+                state.tx = 0;
+                state.ty = 0;
+                state.rot = 0;
+            }
+
+            // интерполяция (плавное приближение)
+            state.currTx += (state.tx - state.currTx) * 0.2;
+            state.currTy += (state.ty - state.currTy) * 0.2;
+            state.currRot += (state.rot - state.currRot) * 0.2;
+
+            card.style.transform = `translate3d(${state.currTx}px, ${state.currTy}px, 0) rotate(${state.currRot}deg)`;
+        }
+        requestAnimationFrame(animateCards);
+    }
+    animateCards();
+
+
+    // Возврат карт при уходе курсора
+        document.getElementById('tablePreview').addEventListener('mouseleave', ()=>{
+            for(let card of cards){
+                card.style.transform = '';
+            }
+        });
+
+
+
+    (function(){
+        const likeBtn = document.getElementById('likeBtn');
+        const likesCount = document.getElementById('likes');
+        const STORAGE_KEY = 'fakeLikesCount';
+        const BASE = 7834;
+
+        // загружаем значение из localStorage
+        let storedLikes = parseInt(localStorage.getItem(STORAGE_KEY), 10);
+
+        if (isNaN(storedLikes) || storedLikes < BASE) {
+            storedLikes = BASE;
+        } else {
+            // случайное увеличение при каждой загрузке страницы
+            const randomIncrease = Math.floor(Math.random() * 5) + 1; // +1..+5
+            storedLikes += randomIncrease;
+        }
+
+        // отображаем и сохраняем
+        likesCount.textContent = storedLikes.toLocaleString('ru-RU');
+        localStorage.setItem(STORAGE_KEY, storedLikes);
+
+        // при клике просто эффект (без изменения числа)
+
+
+        // делаем функции видимыми (берём их из верхнего блока)
+        window.showBubble = window.showBubble || function(){};
+        window.spawnConfetti = window.spawnConfetti || function(){};
+        window.spawnFloatingChips = window.spawnFloatingChips || function(){};
+    })();
+</script>
+<script>
+    (function(){
+        const likeBtn = document.getElementById('likeBtn');
+        const likesCount = document.getElementById('likes');
+        const STORAGE_KEY = 'fakeLikesCount';
+        const BASE = 7834;
+
+        // загружаем значение из localStorage
+        let storedLikes = parseInt(localStorage.getItem(STORAGE_KEY), 10);
+        if (isNaN(storedLikes) || storedLikes < BASE) {
+            storedLikes = BASE;
+        } else {
+            const randomIncrease = Math.floor(Math.random() * 5) + 1; // +1..+5
+            storedLikes += randomIncrease;
+        }
+
+        // отображаем и сохраняем
+        likesCount.textContent = storedLikes.toLocaleString('ru-RU');
+        localStorage.setItem(STORAGE_KEY, storedLikes);
+
+        // клик увеличивает лайк и сохраняет
+        likeBtn.addEventListener('click', () => {
+            storedLikes += 1;
+            likesCount.textContent = storedLikes.toLocaleString('ru-RU');
+            localStorage.setItem(STORAGE_KEY, storedLikes);
+            showBubble(likeBtn, 'Спасибо!');
+            spawnConfetti(18);
+            spawnFloatingChips(6);
+        });
+
+        // делаем функции видимыми
+        window.showBubble = window.showBubble || function(){};
+        window.spawnConfetti = window.spawnConfetti || function(){};
+        window.spawnFloatingChips = window.spawnFloatingChips || function(){};
+    })();
+</script>
+
 </body>
 </html>
