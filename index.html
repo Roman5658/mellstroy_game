@@ -497,128 +497,199 @@
 
 <!-- Mini-game area -->
 
+
+
+
+
+
 <script>
     (function(){
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreEl = document.getElementById('gameScore');
 
-        let width = canvas.offsetWidth;
-        let height = 200; // исходная высота канваса
-        canvas.width = width;
-        canvas.height = height;
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 200;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
 
-        window.addEventListener('resize', ()=>{
-            width = canvas.offsetWidth;
-            canvas.width = width;
-            canvas.height = height;
+        const gravity = 0.7;
+        let score = 0;
+        let keys = {};
+        let cameraX = 0;
+
+        // Звуки
+        // const jumpSound = new Audio('sounds/jump.mp3');
+        const coinSound = new Audio('images/coin.mp3');
+        const gameOverSound = new Audio('images/gameover.mp3');
+        let soundUnlocked = false;
+        document.addEventListener('keydown', () => {
+            if(!soundUnlocked){
+                [jumpSound, coinSound, gameOverSound].forEach(s=>{ s.play().then(()=>s.pause()); s.currentTime=0; });
+                soundUnlocked = true;
+            }
         });
 
-        let score = 0;
-        let gameOver = false;
+        // Картинка игрока
+        const playerImg = new Image();
+        playerImg.src = 'images/img.png';
 
-        const player = {
-            x: 50,
-            y: height - 32,
-            width: 32,
-            height: 32,
-            vy: 0,
-            gravity: 0.8,
-            jumpForce: -14,
-            grounded: true,
-            color: '#ffd54d'
-        };
+        const player = { x:50, y:0, width:32, height:32, vx:0, vy:0, speed:3, jumpForce:-12, grounded:false };
 
-        const obstacles = [];
-        const OBSTACLE_WIDTH = 20;
-        const OBSTACLE_HEIGHT = 40;
-        const OBSTACLE_GAP = 200;
-        let frameCount = 0;
+        // Платформы
+        let platforms = [
+            {x:0, y:180, width:200, height:20, color:'#a1f3c3', type:'normal'},
+            {x:250, y:140, width:120, height:10, color:'#f3d1a1', type:'normal'},
+            {x:450, y:100, width:150, height:10, color:'#61aaff', type:'moving', dir:1, range:50, startX:450}
+        ];
 
-        function spawnObstacle(){
-            const lastX = obstacles.length ? obstacles[obstacles.length - 1].x : width;
-            const x = Math.max(lastX + OBSTACLE_GAP, width);
-            obstacles.push({x:x, y:height-OBSTACLE_HEIGHT, width:OBSTACLE_WIDTH, height:OBSTACLE_HEIGHT});
+        let coins = [
+            {x:270, y:110, radius:6, color:'#ffd54d', collected:false},
+            {x:470, y:70, radius:6, color:'#ff6f61', collected:false},
+            {x:670, y:30, radius:6, color:'#61ff6f', collected:false}
+        ];
+
+        const platformColors = ['#a1f3c3','#f3d1a1','#61aaff'];
+        const coinColors = ['#ffd54d','#ff6f61','#61ff6f','#61aaff'];
+
+        function generatePlatforms() {
+            let last = platforms[platforms.length-1];
+            while(last.x + last.width < player.x + canvas.width + 200){
+                const maxGap = 120;
+                const maxRise = 100;
+
+                const width = 50 + Math.random()*80;
+                const gap = 50 + Math.random()*maxGap;
+                const x = last.x + last.width + gap;
+
+                let y = last.y + (Math.random()*maxRise - maxRise/2);
+                if(y>canvas.height-20) y=canvas.height-20;
+                if(y<40) y=40;
+
+                // случайный тип платформы (только нормальные и двигающиеся)
+                let type = Math.random()<0.15 ? 'moving' : 'normal';
+
+                let color;
+                if(type==='normal') color = platformColors[Math.floor(Math.random()*2)]; // только первые 2 цвета
+                else color='#61aaff'; // движущаяся
+
+                let plat = {x, y, width, height:10, color, type};
+                if(type==='moving') { plat.dir=1; plat.range=50; plat.startX=x; }
+                platforms.push(plat);
+
+                // монеты
+                const numCoins = 1+Math.floor(Math.random()*3);
+                for(let i=0;i<numCoins;i++){
+                    coins.push({x:x+10+i*20, y:y-20, radius:4+Math.random()*4, color:coinColors[Math.floor(Math.random()*coinColors.length)], collected:false});
+                }
+
+                last = platforms[platforms.length-1];
+            }
         }
 
-        function update(){
-            if(gameOver) return;
+        function update() {
+            player.vx=0;
+            if(keys['ArrowLeft']||keys['KeyA']) player.vx=-player.speed;
+            if(keys['ArrowRight']||keys['KeyD']) player.vx=player.speed;
 
-            // движение игрока
-            player.vy += player.gravity;
-            player.y += player.vy;
-            if(player.y + player.height >= height){
-                player.y = height - player.height;
-                player.vy = 0;
-                player.grounded = true;
-            }
+            player.vy+=gravity;
+            player.x+=player.vx;
+            player.y+=player.vy;
+            player.grounded=false;
 
-            // движение препятствий
-            for(let obs of obstacles) obs.x -= 4;
+            for(let p of platforms){
+                if(player.x + player.width > p.x && player.x < p.x + p.width &&
+                    player.y + player.height > p.y && player.y + player.height < p.y + p.height + player.vy){
+                    player.y = p.y - player.height;
+                    player.vy = 0;
+                    player.grounded=true;
+                }
 
-            // удаление пройденных препятствий + увеличение счета
-            for(let i=obstacles.length-1;i>=0;i--){
-                if(obstacles[i].x + obstacles[i].width < 0){
-                    obstacles.splice(i,1);
-                    score += 1;
-                    scoreEl.textContent = `Очки: ${score}`;
+                if(p.type==='moving'){
+                    p.x += 1*p.dir;
+                    if(p.x>p.startX+p.range || p.x<p.startX) p.dir*=-1;
                 }
             }
 
-            // спавн препятствий
-            frameCount++;
-            if(frameCount % 90 === 0) spawnObstacle();
-
-            // проверка столкновений
-            for(let obs of obstacles){
-                if(player.x < obs.x + obs.width &&
-                    player.x + player.width > obs.x &&
-                    player.y < obs.y + obs.height &&
-                    player.y + player.height > obs.y){
-                    gameOver = true;
-                    scoreEl.textContent = `Игра окончена! Очки: ${score}`;
+            for(let c of coins){
+                if(!c.collected &&
+                    player.x < c.x + c.radius*2 &&
+                    player.x + player.width > c.x &&
+                    player.y < c.y + c.radius*2 &&
+                    player.y + player.height > c.y){
+                    c.collected=true; score+=10;
+                    coinSound.currentTime=0; coinSound.play();
                 }
             }
+
+            if(player.y>canvas.height){
+                gameOverSound.currentTime=0; gameOverSound.play();
+                alert("Вы проиграли!");
+                resetGame();
+                return;
+            }
+
+            cameraX = player.x - canvas.width/2;
+            generatePlatforms();
+            scoreEl.textContent=`Очки: ${score}`;
         }
 
-        function draw(){
-            ctx.clearRect(0,0,width,height);
-
-            // игрок
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-
-
-            ctx.fillStyle = '#d92e2e';
-            for(let obs of obstacles) ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+        function draw() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            for(let p of platforms){
+                ctx.fillStyle=p.color;
+                ctx.fillRect(p.x - cameraX, p.y, p.width, p.height);
+            }
+            for(let c of coins){
+                if(!c.collected){
+                    ctx.fillStyle=c.color;
+                    ctx.beginPath();
+                    ctx.arc(c.x - cameraX + c.radius, c.y + c.radius, c.radius,0,Math.PI*2);
+                    ctx.fill();
+                }
+            }
+            ctx.drawImage(playerImg, player.x - cameraX, player.y, player.width, player.height);
         }
 
-        function loop(){
-            update();
-            draw();
-            requestAnimationFrame(loop);
-        }
-
+        function loop(){ update(); draw(); requestAnimationFrame(loop); }
         loop();
 
+        function resetGame(){
+            player.x=50; player.y=0; player.vx=0; player.vy=0; player.grounded=false; score=0; keys={};
+            platforms=[
+                {x:0, y:180, width:200, height:20, color:'#a1f3c3', type:'normal'},
+                {x:250, y:140, width:120, height:10, color:'#f3d1a1', type:'normal'},
+                {x:450, y:100, width:150, height:10, color:'#61aaff', type:'moving', dir:1, range:50, startX:450}
+            ];
+            coins=[
+                {x:270, y:110, radius:6, color:'#ffd54d', collected:false},
+                {x:470, y:70, radius:6, color:'#ff6f61', collected:false},
+                {x:670, y:30, radius:6, color:'#61ff6f', collected:false}
+            ];
+        }
 
-        document.addEventListener('keydown', (e) => {
-            if((e.code === 'Space' || e.code === 'ArrowUp') && player.grounded){
-                player.vy = player.jumpForce;
-                player.grounded = false;
+        document.addEventListener('keydown', e=>{
+            keys[e.code]=true;
+            if((e.code==='ArrowUp'||e.code==='Space'||e.code==='KeyW') && player.grounded){
+                player.vy=player.jumpForce; player.grounded=false;
+                jumpSound.currentTime=0; jumpSound.play();
             }
         });
-
-
-        canvas.addEventListener('touchstart', (e)=>{
+        document.addEventListener('keyup', e=>keys[e.code]=false);
+        canvas.addEventListener('touchstart', e=>{
             e.preventDefault();
-            if(player.grounded){
-                player.vy = player.jumpForce;
-                player.grounded = false;
-            }
+            if(player.grounded){ player.vy=player.jumpForce; player.grounded=false; jumpSound.currentTime=0; jumpSound.play();}
         }, {passive:false});
     })();
 </script>
+
+
+
+
+
+
 
 
 
