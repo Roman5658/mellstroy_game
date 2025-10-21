@@ -588,7 +588,7 @@
             ctx.fillStyle = player.color;
             ctx.fillRect(player.x, player.y, player.width, player.height);
 
-            // препятствия
+
             ctx.fillStyle = '#d92e2e';
             for(let obs of obstacles) ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
         }
@@ -601,7 +601,7 @@
 
         loop();
 
-        // управление
+
         document.addEventListener('keydown', (e) => {
             if((e.code === 'Space' || e.code === 'ArrowUp') && player.grounded){
                 player.vy = player.jumpForce;
@@ -609,7 +609,7 @@
             }
         });
 
-        // сенсорные устройства
+
         canvas.addEventListener('touchstart', (e)=>{
             e.preventDefault();
             if(player.grounded){
