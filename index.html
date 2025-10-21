@@ -497,27 +497,33 @@
 
 <!-- Mini-game area -->
 
-
 <script>
-
+    (function(){
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreEl = document.getElementById('gameScore');
 
-        const width = canvas.width;
-        const height = canvas.height;
+        let width = canvas.offsetWidth;
+        let height = 200; // исходная высота канваса
+        canvas.width = width;
+        canvas.height = height;
 
-        let gameOver = false;
+        window.addEventListener('resize', ()=>{
+            width = canvas.offsetWidth;
+            canvas.width = width;
+            canvas.height = height;
+        });
+
         let score = 0;
+        let gameOver = false;
 
         const player = {
             x: 50,
-            y: height - 40,
+            y: height - 32,
             width: 32,
             height: 32,
             vy: 0,
             gravity: 0.8,
-
             jumpForce: -14,
             grounded: true,
             color: '#ffd54d'
@@ -526,27 +532,13 @@
         const obstacles = [];
         const OBSTACLE_WIDTH = 20;
         const OBSTACLE_HEIGHT = 40;
-        const OBSTACLE_GAP = 200; // минимальное расстояние между препятствиями
-
+        const OBSTACLE_GAP = 200;
         let frameCount = 0;
-
-        // управление
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' || e.code === 'ArrowUp') {
-                e.preventDefault(); // <-- предотвращаем скролл
-            }
-
-            if ((e.code === 'Space' || e.code === 'ArrowUp') && player.grounded) {
-                player.vy = player.jumpForce;
-                player.grounded = false;
-            }
-        });
-
 
         function spawnObstacle(){
             const lastX = obstacles.length ? obstacles[obstacles.length - 1].x : width;
             const x = Math.max(lastX + OBSTACLE_GAP, width);
-            obstacles.push({x:x, y:height-40, width:OBSTACLE_WIDTH, height:OBSTACLE_HEIGHT});
+            obstacles.push({x:x, y:height-OBSTACLE_HEIGHT, width:OBSTACLE_WIDTH, height:OBSTACLE_HEIGHT});
         }
 
         function update(){
@@ -562,9 +554,7 @@
             }
 
             // движение препятствий
-            for(let obs of obstacles){
-                obs.x -= 4;
-            }
+            for(let obs of obstacles) obs.x -= 4;
 
             // удаление пройденных препятствий + увеличение счета
             for(let i=obstacles.length-1;i>=0;i--){
@@ -577,9 +567,7 @@
 
             // спавн препятствий
             frameCount++;
-            if(frameCount % 90 === 0){ // каждые ~1.5 секунды
-                spawnObstacle();
-            }
+            if(frameCount % 90 === 0) spawnObstacle();
 
             // проверка столкновений
             for(let obs of obstacles){
@@ -594,7 +582,6 @@
         }
 
         function draw(){
-            // очистка
             ctx.clearRect(0,0,width,height);
 
             // игрок
@@ -603,9 +590,7 @@
 
             // препятствия
             ctx.fillStyle = '#d92e2e';
-            for(let obs of obstacles){
-                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-            }
+            for(let obs of obstacles) ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
         }
 
         function loop(){
@@ -616,33 +601,26 @@
 
         loop();
 
-    // для сенсорных устройств
-    canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault(); // чтобы не скроллилось
-        if(player.grounded){
-            player.vy = player.jumpForce;
-            player.grounded = false;
-        }
-    }, {passive:false});
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    let canvasWidth = canvas.offsetWidth;
-    let canvasHeight = canvasWidth * (200/800); // пропорции исходного канваса
+        // управление
+        document.addEventListener('keydown', (e) => {
+            if((e.code === 'Space' || e.code === 'ArrowUp') && player.grounded){
+                player.vy = player.jumpForce;
+                player.grounded = false;
+            }
+        });
 
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-
-    // при изменении размера окна
-    window.addEventListener('resize', () => {
-        canvasWidth = canvas.offsetWidth;
-        canvasHeight = canvasWidth * (200/800);
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
-    });
-
-    // или кнопка "Прыжок" (добавь на страницу, если нужно)
-
+        // сенсорные устройства
+        canvas.addEventListener('touchstart', (e)=>{
+            e.preventDefault();
+            if(player.grounded){
+                player.vy = player.jumpForce;
+                player.grounded = false;
+            }
+        }, {passive:false});
+    })();
 </script>
+
+
 
 
 <script>
