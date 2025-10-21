@@ -405,6 +405,45 @@
                 font-size:11px;
             }
         }
+        /* Мобильные кнопки управления */
+        .mobile-controls {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 14px;
+            touch-action: manipulation;
+        }
+
+        .ctrl-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.12);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: #fff;
+            font-size: 30px;
+            font-weight: bold;
+            backdrop-filter: blur(6px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            transition: transform 0.1s, background 0.1s;
+            user-select: none;
+        }
+
+        .ctrl-btn:active {
+            transform: scale(0.9);
+            background: rgba(255,255,255,0.25);
+        }
+
+        .ctrl-btn.jump {
+            color: var(--accent, #61aaff);
+        }
+
+        @media (max-width: 768px) {
+            .mobile-controls {
+                display: flex;
+            }
+        }
 
     </style>
 </head>
@@ -475,6 +514,11 @@
                 <canvas id="gameCanvas" width="800" height="200" style="background:linear-gradient(to top,#0f1720,#09121a); border-radius:12px; width:100%; max-width:800px; height:auto; display:block; margin:0 auto;"></canvas>
 
                 <div style="margin-top:6px; color:var(--accent); font-weight:700;" id="gameScore">Очки: 0</div>
+                <div class="mobile-controls">
+                    <button id="btnLeft" class="ctrl-btn">←</button>
+                    <button id="btnJump" class="ctrl-btn jump">⤒</button>
+                    <button id="btnRight" class="ctrl-btn">→</button>
+                </div>
             </div>
         </div>
 
@@ -515,30 +559,38 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
-        const gravity = 0.7;
+        const gravity = 0.5;
         let score = 0;
         let keys = {};
         let cameraX = 0;
 
-        // Звуки
-        // const jumpSound = new Audio('sounds/jump.mp3');
+        // звуки
+        const jumpSound = new Audio('images/jump.mp3');
         const coinSound = new Audio('images/coin.mp3');
         const gameOverSound = new Audio('images/gameover.mp3');
         let soundUnlocked = false;
+
         document.addEventListener('keydown', () => {
             if(!soundUnlocked){
-                [jumpSound, coinSound, gameOverSound].forEach(s=>{ s.play().then(()=>s.pause()); s.currentTime=0; });
+                [jumpSound, coinSound, gameOverSound].forEach(s=>{
+                    s.play().then(()=>s.pause());
+                    s.currentTime=0;
+                });
                 soundUnlocked = true;
             }
         });
 
-        // Картинка игрока
+        // спрайт игрока
         const playerImg = new Image();
         playerImg.src = 'images/img.png';
 
-        const player = { x:50, y:0, width:32, height:32, vx:0, vy:0, speed:3, jumpForce:-12, grounded:false };
+        const player = {
+            x:50, y:0, width:32, height:32,
+            vx:0, vy:0,
+            speed:3, jumpForce:-14,
+            grounded:false
+        };
 
-        // Платформы
         let platforms = [
             {x:0, y:180, width:200, height:20, color:'#a1f3c3', type:'normal'},
             {x:250, y:140, width:120, height:10, color:'#f3d1a1', type:'normal'},
@@ -557,35 +609,27 @@
         function generatePlatforms() {
             let last = platforms[platforms.length-1];
             while(last.x + last.width < player.x + canvas.width + 200){
-                const maxGap = 120;
-                const maxRise = 100;
-
                 const width = 50 + Math.random()*80;
-                const gap = 50 + Math.random()*maxGap;
+                const gap = 50 + Math.random()*120;
                 const x = last.x + last.width + gap;
 
-                let y = last.y + (Math.random()*maxRise - maxRise/2);
+                let y = last.y + (Math.random()*100 - 50);
                 if(y>canvas.height-20) y=canvas.height-20;
                 if(y<40) y=40;
 
-                // случайный тип платформы (только нормальные и двигающиеся)
                 let type = Math.random()<0.15 ? 'moving' : 'normal';
-
-                let color;
-                if(type==='normal') color = platformColors[Math.floor(Math.random()*2)]; // только первые 2 цвета
-                else color='#61aaff'; // движущаяся
+                let color = type==='moving' ? '#61aaff' : platformColors[Math.floor(Math.random()*2)];
 
                 let plat = {x, y, width, height:10, color, type};
-                if(type==='moving') { plat.dir=1; plat.range=50; plat.startX=x; }
+                if(type==='moving'){ plat.dir=1; plat.range=50; plat.startX=x; }
                 platforms.push(plat);
 
-                // монеты
                 const numCoins = 1+Math.floor(Math.random()*3);
                 for(let i=0;i<numCoins;i++){
-                    coins.push({x:x+10+i*20, y:y-20, radius:4+Math.random()*4, color:coinColors[Math.floor(Math.random()*coinColors.length)], collected:false});
+                    coins.push({x:x+10+i*20, y:y-20, radius:4+Math.random()*4,
+                        color:coinColors[Math.floor(Math.random()*coinColors.length)], collected:false});
                 }
-
-                last = platforms[platforms.length-1];
+                last = plat;
             }
         }
 
@@ -606,9 +650,8 @@
                     player.vy = 0;
                     player.grounded=true;
                 }
-
                 if(p.type==='moving'){
-                    p.x += 1*p.dir;
+                    p.x += p.dir;
                     if(p.x>p.startX+p.range || p.x<p.startX) p.dir*=-1;
                 }
             }
@@ -657,7 +700,8 @@
         loop();
 
         function resetGame(){
-            player.x=50; player.y=0; player.vx=0; player.vy=0; player.grounded=false; score=0; keys={};
+            player.x=50; player.y=0; player.vx=0; player.vy=0;
+            player.grounded=false; score=0; keys={};
             platforms=[
                 {x:0, y:180, width:200, height:20, color:'#a1f3c3', type:'normal'},
                 {x:250, y:140, width:120, height:10, color:'#f3d1a1', type:'normal'},
@@ -673,16 +717,61 @@
         document.addEventListener('keydown', e=>{
             keys[e.code]=true;
             if((e.code==='ArrowUp'||e.code==='Space'||e.code==='KeyW') && player.grounded){
-                player.vy=player.jumpForce; player.grounded=false;
-                jumpSound.currentTime=0; jumpSound.play();
+                player.vy=player.jumpForce;
+                player.grounded=false;
+                jumpSound.currentTime=0;
+                jumpSound.play();
             }
         });
         document.addEventListener('keyup', e=>keys[e.code]=false);
+
         canvas.addEventListener('touchstart', e=>{
             e.preventDefault();
-            if(player.grounded){ player.vy=player.jumpForce; player.grounded=false; jumpSound.currentTime=0; jumpSound.play();}
+            if(player.grounded){
+                player.vy=player.jumpForce;
+                player.grounded=false;
+                jumpSound.currentTime=0;
+                jumpSound.play();
+            }
         }, {passive:false});
+        // --- Мобильные кнопки управления ---
+        const btnLeft = document.getElementById('btnLeft');
+        const btnRight = document.getElementById('btnRight');
+        const btnJump = document.getElementById('btnJump');
+
+// движение влево
+        btnLeft?.addEventListener('touchstart', e=>{
+            e.preventDefault();
+            keys['ArrowLeft']=true;
+        });
+        btnLeft?.addEventListener('touchend', e=>{
+            e.preventDefault();
+            keys['ArrowLeft']=false;
+        });
+
+// движение вправо
+        btnRight?.addEventListener('touchstart', e=>{
+            e.preventDefault();
+            keys['ArrowRight']=true;
+        });
+        btnRight?.addEventListener('touchend', e=>{
+            e.preventDefault();
+            keys['ArrowRight']=false;
+        });
+
+// прыжок
+        btnJump?.addEventListener('touchstart', e=>{
+            e.preventDefault();
+            if(player.grounded){
+                player.vy=player.jumpForce;
+                player.grounded=false;
+                jumpSound.currentTime=0;
+                jumpSound.play();
+            }
+        });
+
     })();
+
 </script>
 
 
